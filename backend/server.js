@@ -1,5 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+
+const bcrypt = require('bcrypt');
+
+const saltRounds = 10;
+
 const bodyParser = require('body-parser');
 const connection = require('./db');
 const app = express();
@@ -14,11 +19,11 @@ app.get('/users', (req, res) => {
 });
 
 
-app.post('/users', (req, res) => {
- const { nombre, apellidos, correo, password, fecha_nacimiento, rfc } = 
-req.body;
+app.post('/users', async (req, res) => {
+ const { nombre, apellidos, correo, password, fecha_nacimiento, rfc } = req.body;
+ const hashedPassword = await bcrypt.hash(password, saltRounds);
  connection.query( "INSERT INTO users (nombre, apellidos, correo, password, fecha_nacimiento, rfc) VALUES (?, ?, ?, ?, ?, ?)",
- [nombre, apellidos, correo, password, fecha_nacimiento, rfc],
+ [nombre, apellidos, correo, hashedPassword, fecha_nacimiento, rfc],
  (err, result) => {
  if (err) throw err;
  res.json({ id: result.insertId, ...req.body });
@@ -27,13 +32,14 @@ req.body;
 });
 
 
-app.put('/users/:id', (req, res) => {
+app.put('/users/:id', async (req, res) => {
  const { id } = req.params;
  const { nombre, apellidos, correo, password, fecha_nacimiento, rfc } = 
 req.body;
+ const hashedPassword = await bcrypt.hash(password, saltRounds);
  connection.query(
  "UPDATE users SET nombre=?, apellidos=?, correo=?, password=?, fecha_nacimiento=?, rfc=? WHERE id=?",
- [nombre, apellidos, correo, password, fecha_nacimiento, rfc, id],
+ [nombre, apellidos, correo, hashedPassword, fecha_nacimiento, rfc, id],
  (err) => {
  if (err) throw err;
  res.json({ id, ...req.body });
